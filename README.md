@@ -36,6 +36,13 @@ Handles book inventory, user borrowings, and payments tracking — replacing the
 | `PUT/PATCH` | `/api/books/<id>/`  | Update book (including inventory)   | Admin only |
 | `DELETE`    | `/api/books/<id>/`  | Delete a book                       | Admin only |
 
+### Borrowings
+
+| Method | Endpoint                  | Description                      | Auth     |
+|--------|---------------------------|----------------------------------|----------|
+| `GET`  | `/api/borrowings/`        | List borrowings                  | Required |
+| `GET`  | `/api/borrowings/<id>/`   | Get specific borrowing           | Required |
+
 ### Documentation
 
 | Endpoint               | Description          |
