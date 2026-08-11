@@ -174,9 +174,121 @@ class AuthenticatedBorrowingApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_list_shows_only_own_borrowings(self):
+        other_user = get_user_model().objects.create_user(
+            "other@test.com", "testpass123"
+        )
+        sample_borrowing(self.user)
+        sample_borrowing(other_user)
+
+        res = self.client.get(BORROWING_LIST_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 1)
+
+    def test_filter_is_active_true(self):
+        sample_borrowing(self.user)
+        sample_borrowing(self.user, actual_return_date=date.today())
+
+        res = self.client.get(BORROWING_LIST_URL, {"is_active": "true"})
+
+        self.assertEqual(len(res.data), 1)
+        self.assertIsNone(res.data[0]["actual_return_date"])
+
+    def test_filter_is_active_false(self):
+        sample_borrowing(self.user)
+        sample_borrowing(self.user, actual_return_date=date.today())
+
+        res = self.client.get(BORROWING_LIST_URL, {"is_active": "false"})
+
+        self.assertEqual(len(res.data), 1)
+        self.assertIsNotNone(res.data[0]["actual_return_date"])
+
+    def test_user_id_filter_ignored_for_non_admin(self):
+        other_user = get_user_model().objects.create_user(
+            "other@test.com", "testpass123"
+        )
+        sample_borrowing(self.user)
+        sample_borrowing(other_user)
+
+        res = self.client.get(BORROWING_LIST_URL, {"user_id": other_user.id})
+
+        self.assertEqual(len(res.data), 1)
+
+    def test_is_overdue_filter_ignored_for_non_admin(self):
+        sample_borrowing(
+            self.user,
+            expected_return_date=date.today() - timedelta(days=1),
+        )
+        sample_borrowing(
+            self.user,
+            expected_return_date=date.today() + timedelta(days=7),
+        )
+
+        res = self.client.get(BORROWING_LIST_URL, {"is_overdue": "true"})
+
+        self.assertEqual(len(res.data), 2)
+
     def test_borrowing_model_str(self):
         book = sample_book(title="Django Basics")
         borrowing = sample_borrowing(self.user, book=book)
 
         self.assertIn("Django Basics", str(borrowing))
         self.assertIn(self.user.email, str(borrowing))
+
+
+class AdminBorrowingApiTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.admin = get_user_model().objects.create_user(
+            "admin@test.com", "testpass123", is_staff=True
+        )
+        self.client.force_authenticate(self.admin)
+
+    def test_admin_sees_all_borrowings(self):
+        other_user = get_user_model().objects.create_user(
+            "other@test.com", "testpass123"
+        )
+        sample_borrowing(self.admin)
+        sample_borrowing(other_user)
+
+        res = self.client.get(BORROWING_LIST_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 2)
+
+    def test_admin_filter_by_user_id(self):
+        other_user = get_user_model().objects.create_user(
+            "other@test.com", "testpass123"
+        )
+        sample_borrowing(self.admin)
+        sample_borrowing(other_user)
+
+        res = self.client.get(BORROWING_LIST_URL, {"user_id": other_user.id})
+
+        self.assertEqual(len(res.data), 1)
+
+    def test_admin_filter_is_overdue(self):
+        sample_borrowing(
+            self.admin,
+            expected_return_date=date.today() - timedelta(days=1),
+        )
+        sample_borrowing(
+            self.admin,
+            expected_return_date=date.today() + timedelta(days=7),
+        )
+
+        res = self.client.get(BORROWING_LIST_URL, {"is_overdue": "true"})
+
+        self.assertEqual(len(res.data), 1)
+
+    def test_admin_is_overdue_excludes_returned(self):
+        sample_borrowing(
+            self.admin,
+            expected_return_date=date.today() - timedelta(days=1),
+            actual_return_date=date.today(),
+        )
+
+        res = self.client.get(BORROWING_LIST_URL, {"is_overdue": "true"})
+
+        self.assertEqual(len(res.data), 0)
