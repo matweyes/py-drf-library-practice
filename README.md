@@ -98,6 +98,15 @@ cp .env.sample .env
 | `DJANGO_ALLOWED_HOSTS` | Comma-separated allowed hosts   | `localhost,127.0.0.1`     |
 | `USE_SQLITE`           | Use SQLite instead of Postgres  | (unset = Postgres)        |
 
+### Running with Docker
+
+```shell
+cp .env.sample .env
+docker compose up --build
+```
+
+The API will be available at `http://localhost:8000/`.
+
 ### Running Locally (SQLite)
 
 ```shell
