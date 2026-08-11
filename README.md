@@ -1,1 +1,123 @@
-# py-drf-library-practice
+# Library Service API
+
+RESTful backend for an online library management system.
+Handles book inventory, user borrowings, and payments tracking — replacing the library's outdated paper-based workflow.
+
+## Tech Stack
+
+- **Python 3.12**
+- **Django 6.1** — web framework
+- **Django REST Framework 3.18** — API toolkit
+- **PostgreSQL 16** — database
+- **JWT** (`djangorestframework-simplejwt`) — authentication
+- **drf-spectacular** — OpenAPI 3 schema + Swagger / ReDoc
+- **Docker & Docker Compose** — containerized deployment
+- **Poetry** — dependency management
+
+## API Endpoints
+
+### Users
+
+| Method      | Endpoint                   | Description                    | Auth     |
+|-------------|----------------------------|--------------------------------|----------|
+| `POST`      | `/api/users/`              | Register a new user            | —        |
+| `POST`      | `/api/users/token/`        | Obtain JWT access + refresh    | —        |
+| `POST`      | `/api/users/token/refresh/`| Refresh an expired access token| —        |
+| `GET`       | `/api/users/me/`           | Retrieve own profile           | Required |
+| `PUT/PATCH` | `/api/users/me/`           | Update own profile             | Required |
+
+### Books
+
+| Method      | Endpoint            | Description                         | Auth       |
+|-------------|---------------------|-------------------------------------|------------|
+| `GET`       | `/api/books/`       | List all books                      | —          |
+| `GET`       | `/api/books/<id>/`  | Get book detail info                | —          |
+| `POST`      | `/api/books/`       | Add a new book                      | Admin only |
+| `PUT/PATCH` | `/api/books/<id>/`  | Update book (including inventory)   | Admin only |
+| `DELETE`    | `/api/books/<id>/`  | Delete a book                       | Admin only |
+
+### Borrowings
+
+| Method | Endpoint                  | Description                      | Auth     |
+|--------|---------------------------|----------------------------------|----------|
+| `POST` | `/api/borrowings/`        | Create a borrowing (inventory -1)\*| Required |
+| `GET`  | `/api/borrowings/`        | List borrowings                  | Required |
+| `GET`  | `/api/borrowings/<id>/`   | Get specific borrowing           | Required |
+| `POST` | `/api/borrowings/<id>/return/` | Return a borrowing (inventory +1) | Required |
+
+\* Creating a borrowing is denied if the user has any overdue (not returned) borrowings.
+
+**Filters** for `GET /api/borrowings/`:
+
+| Parameter   | Description                                        | Access     |
+|-------------|----------------------------------------------------|------------|
+| `is_active` | `true` — not returned; `false` — returned           | Any user   |
+| `user_id`   | Filter by user ID                                   | Admin only |
+| `is_overdue`| `true` — overdue and not returned                   | Admin only |
+
+Non-admin users always see only their own borrowings.
+
+### Documentation
+
+| Endpoint               | Description          |
+|------------------------|----------------------|
+| `/api/doc/swagger/`    | Swagger UI           |
+| `/api/doc/redoc/`      | ReDoc                |
+| `/api/schema/`         | OpenAPI 3 schema     |
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.12+
+- Poetry 2.x
+
+### Installation
+
+```shell
+git clone <repo-url>
+cd drf-library-practice
+poetry install
+```
+
+### Configuration
+
+Copy `.env.sample` to `.env` and adjust values:
+
+```shell
+cp .env.sample .env
+```
+
+| Variable               | Description                     | Default                   |
+|------------------------|---------------------------------|---------------------------|
+| `POSTGRES_DB`          | Database name                   | `library`                 |
+| `POSTGRES_USER`        | Database user                   | `library`                 |
+| `POSTGRES_PASSWORD`    | Database password               | `library`                 |
+| `POSTGRES_HOST`        | Database host                   | `localhost`               |
+| `POSTGRES_PORT`        | Database port                   | `5432`                    |
+| `DJANGO_SECRET_KEY`    | Django secret key               | (insecure dev default)    |
+| `DJANGO_DEBUG`         | Set to `False` for production   | `True`                    |
+| `DJANGO_ALLOWED_HOSTS` | Comma-separated allowed hosts   | `localhost,127.0.0.1`     |
+| `USE_SQLITE`           | Use SQLite instead of Postgres  | (unset = Postgres)        |
+
+### Running with Docker
+
+```shell
+cp .env.sample .env
+docker compose up --build
+```
+
+The API will be available at `http://localhost:8000/`.
+
+### Running Locally (SQLite)
+
+```shell
+USE_SQLITE=True poetry run python manage.py migrate
+USE_SQLITE=True poetry run python manage.py runserver
+```
+
+### Running Tests
+
+```shell
+USE_SQLITE=True poetry run python manage.py test --verbosity=2
+```
