@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 
 from books.serializers import BookDetailSerializer
@@ -17,6 +18,19 @@ class BorrowingCreateSerializer(serializers.ModelSerializer):
                 "This book is out of stock."
             )
         return value
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        has_overdue = Borrowing.objects.filter(
+            user=user,
+            expected_return_date__lt=timezone.now().date(),
+            actual_return_date__isnull=True,
+        ).exists()
+        if has_overdue:
+            raise serializers.ValidationError(
+                "You cannot borrow books while you have overdue borrowings."
+            )
+        return attrs
 
 
 class BorrowingReturnSerializer(serializers.ModelSerializer):
