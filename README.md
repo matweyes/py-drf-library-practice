@@ -26,6 +26,16 @@ Handles book inventory, user borrowings, and payments tracking — replacing the
 | `GET`       | `/api/users/me/`           | Retrieve own profile           | Required |
 | `PUT/PATCH` | `/api/users/me/`           | Update own profile             | Required |
 
+### Books
+
+| Method      | Endpoint            | Description                         | Auth       |
+|-------------|---------------------|-------------------------------------|------------|
+| `GET`       | `/api/books/`       | List all books                      | —          |
+| `GET`       | `/api/books/<id>/`  | Get book detail info                | —          |
+| `POST`      | `/api/books/`       | Add a new book                      | Admin only |
+| `PUT/PATCH` | `/api/books/<id>/`  | Update book (including inventory)   | Admin only |
+| `DELETE`    | `/api/books/<id>/`  | Delete a book                       | Admin only |
+
 ### Documentation
 
 | Endpoint               | Description          |
