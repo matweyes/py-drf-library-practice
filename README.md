@@ -43,6 +43,7 @@ Handles book inventory, user borrowings, and payments tracking — replacing the
 | `POST` | `/api/borrowings/`        | Create a borrowing (inventory -1)| Required |
 | `GET`  | `/api/borrowings/`        | List borrowings                  | Required |
 | `GET`  | `/api/borrowings/<id>/`   | Get specific borrowing           | Required |
+| `POST` | `/api/borrowings/<id>/return/` | Return a borrowing (inventory +1) | Required |
 
 **Filters** for `GET /api/borrowings/`:
 

@@ -1,14 +1,17 @@
 from django.db import transaction
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
-from rest_framework import viewsets, mixins
+from rest_framework import viewsets, mixins, status
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from borrowings.models import Borrowing
 from borrowings.serializers import (
     BorrowingCreateSerializer,
     BorrowingListSerializer,
     BorrowingDetailSerializer,
+    BorrowingReturnSerializer,
 )
 
 
@@ -80,6 +83,8 @@ class BorrowingViewSet(
             return BorrowingCreateSerializer
         if self.action == "retrieve":
             return BorrowingDetailSerializer
+        if self.action == "return_borrowing":
+            return BorrowingReturnSerializer
         return BorrowingListSerializer
 
     def perform_create(self, serializer):
@@ -88,3 +93,24 @@ class BorrowingViewSet(
             book = borrowing.book
             book.inventory -= 1
             book.save(update_fields=["inventory"])
+
+    @extend_schema(
+        description="Return a borrowing. Sets actual_return_date and increments book inventory.",
+    )
+    @action(detail=True, methods=["post"], url_path="return")
+    def return_borrowing(self, request, pk=None):
+        borrowing = self.get_object()
+        serializer = self.get_serializer(borrowing, data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        with transaction.atomic():
+            borrowing.actual_return_date = timezone.now().date()
+            borrowing.save(update_fields=["actual_return_date"])
+            book = borrowing.book
+            book.inventory += 1
+            book.save(update_fields=["inventory"])
+
+        return Response(
+            BorrowingDetailSerializer(borrowing).data,
+            status=status.HTTP_200_OK,
+        )
