@@ -59,6 +59,16 @@ class AnonymousBorrowingApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_create_borrowing_unauthorized(self):
+        book = sample_book()
+        payload = {
+            "book": book.id,
+            "expected_return_date": str(date.today() + timedelta(days=7)),
+        }
+        res = self.client.post(BORROWING_LIST_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
 
 class AuthenticatedBorrowingApiTests(TestCase):
     def setUp(self):
@@ -126,6 +136,43 @@ class AuthenticatedBorrowingApiTests(TestCase):
                 book=sample_book(),
                 user=self.user,
             )
+
+    def test_create_borrowing(self):
+        book = sample_book(inventory=5)
+        payload = {
+            "book": book.id,
+            "expected_return_date": str(date.today() + timedelta(days=7)),
+        }
+
+        res = self.client.post(BORROWING_LIST_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        borrowing = Borrowing.objects.get(id=res.data["id"])
+        self.assertEqual(borrowing.user, self.user)
+        self.assertEqual(borrowing.book, book)
+
+    def test_create_borrowing_decrements_inventory(self):
+        book = sample_book(inventory=5)
+        payload = {
+            "book": book.id,
+            "expected_return_date": str(date.today() + timedelta(days=7)),
+        }
+
+        self.client.post(BORROWING_LIST_URL, payload)
+
+        book.refresh_from_db()
+        self.assertEqual(book.inventory, 4)
+
+    def test_create_borrowing_zero_inventory_rejected(self):
+        book = sample_book(inventory=0)
+        payload = {
+            "book": book.id,
+            "expected_return_date": str(date.today() + timedelta(days=7)),
+        }
+
+        res = self.client.post(BORROWING_LIST_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_borrowing_model_str(self):
         book = sample_book(title="Django Basics")
