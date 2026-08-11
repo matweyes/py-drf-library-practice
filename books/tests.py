@@ -29,7 +29,7 @@ def sample_book(**params):
     return Book.objects.create(**defaults)
 
 
-class BookApiTests(TestCase):
+class AnonymousBookApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
 
@@ -68,6 +68,75 @@ class BookApiTests(TestCase):
         res = self.client.get(detail_url(book.id))
 
         self.assertIn("daily_fee", res.data)
+
+    def test_create_book_unauthorized(self):
+        payload = {
+            "title": "New Book",
+            "author": "Author",
+            "cover": "HARD",
+            "inventory": 5,
+            "daily_fee": "2.00",
+        }
+        res = self.client.post(BOOK_LIST_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class AuthenticatedBookApiTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            "user@test.com", "testpass123"
+        )
+        self.client.force_authenticate(self.user)
+
+    def test_list_books(self):
+        sample_book()
+
+        res = self.client.get(BOOK_LIST_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+    def test_create_book_forbidden(self):
+        payload = {
+            "title": "New Book",
+            "author": "Author",
+            "cover": "HARD",
+            "inventory": 5,
+            "daily_fee": "2.00",
+        }
+        res = self.client.post(BOOK_LIST_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_update_book_forbidden(self):
+        book = sample_book()
+
+        res = self.client.put(detail_url(book.id), {
+            "title": "Updated",
+            "author": "Author",
+            "cover": "SOFT",
+            "inventory": 5,
+            "daily_fee": "2.00",
+        })
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_delete_book_forbidden(self):
+        book = sample_book()
+
+        res = self.client.delete(detail_url(book.id))
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class AdminBookApiTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            "admin@test.com", "testpass123", is_staff=True
+        )
+        self.client.force_authenticate(self.user)
 
     def test_create_book(self):
         payload = {
