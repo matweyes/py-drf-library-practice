@@ -44,6 +44,16 @@ Handles book inventory, user borrowings, and payments tracking — replacing the
 | `GET`  | `/api/borrowings/`        | List borrowings                  | Required |
 | `GET`  | `/api/borrowings/<id>/`   | Get specific borrowing           | Required |
 
+**Filters** for `GET /api/borrowings/`:
+
+| Parameter   | Description                                        | Access     |
+|-------------|----------------------------------------------------|------------|
+| `is_active` | `true` — not returned; `false` — returned           | Any user   |
+| `user_id`   | Filter by user ID                                   | Admin only |
+| `is_overdue`| `true` — overdue and not returned                   | Admin only |
+
+Non-admin users always see only their own borrowings.
+
 ### Documentation
 
 | Endpoint               | Description          |
