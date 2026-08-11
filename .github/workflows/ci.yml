@@ -28,6 +28,29 @@ jobs:
 
   check:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: library
+          POSTGRES_USER: library
+          POSTGRES_PASSWORD: library
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U library -d library"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      POSTGRES_DB: library
+      POSTGRES_USER: library
+      POSTGRES_PASSWORD: library
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
     steps:
       - uses: actions/checkout@v4
 
@@ -44,15 +67,29 @@ jobs:
 
       - name: Run Django system checks
         run: poetry run python manage.py check
-        env:
-          DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
-          DJANGO_DEBUG: "False"
-          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
 
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: library
+          POSTGRES_USER: library
+          POSTGRES_PASSWORD: library
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U library -d library"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
     env:
-      USE_SQLITE: "True"
+      POSTGRES_DB: library
+      POSTGRES_USER: library
+      POSTGRES_PASSWORD: library
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
       DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
       DJANGO_DEBUG: "False"
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
