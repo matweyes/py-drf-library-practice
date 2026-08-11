@@ -2,6 +2,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets
 
 from books.models import Book
+from books.permissions import IsAdminOrReadOnly
 from books.serializers import (
     BookSerializer,
     BookListSerializer,
@@ -13,14 +14,15 @@ from books.serializers import (
 @extend_schema_view(
     list=extend_schema(description="List all books in the library."),
     retrieve=extend_schema(description="Retrieve detailed info about a specific book."),
-    create=extend_schema(description="Add a new book to the library."),
-    update=extend_schema(description="Fully update a book."),
-    partial_update=extend_schema(description="Partially update a book."),
-    destroy=extend_schema(description="Delete a book from the library."),
+    create=extend_schema(description="Add a new book to the library. Admin only."),
+    update=extend_schema(description="Fully update a book. Admin only."),
+    partial_update=extend_schema(description="Partially update a book. Admin only."),
+    destroy=extend_schema(description="Delete a book from the library. Admin only."),
 )
 class BookViewSet(viewsets.ModelViewSet):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
+    permission_classes = (IsAdminOrReadOnly,)
 
     def get_serializer_class(self):
         if self.action == "list":
