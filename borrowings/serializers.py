@@ -19,6 +19,22 @@ class BorrowingCreateSerializer(serializers.ModelSerializer):
         return value
 
 
+class BorrowingReturnSerializer(serializers.ModelSerializer):
+    """Serializer for returning a borrowing."""
+
+    class Meta:
+        model = Borrowing
+        fields = ("id",)
+        read_only_fields = ("id",)
+
+    def validate(self, attrs):
+        if self.instance.actual_return_date is not None:
+            raise serializers.ValidationError(
+                "This borrowing has already been returned."
+            )
+        return attrs
+
+
 class BorrowingListSerializer(serializers.ModelSerializer):
     """Serializer for listing borrowings (summary view)."""
 

@@ -18,6 +18,10 @@ def detail_url(borrowing_id):
     return reverse("borrowings:borrowing-detail", args=[borrowing_id])
 
 
+def return_url(borrowing_id):
+    return reverse("borrowings:borrowing-return-borrowing", args=[borrowing_id])
+
+
 def sample_book(**params):
     defaults = {
         "title": "Test Book",
@@ -228,6 +232,34 @@ class AuthenticatedBorrowingApiTests(TestCase):
         res = self.client.get(BORROWING_LIST_URL, {"is_overdue": "true"})
 
         self.assertEqual(len(res.data), 2)
+
+    def test_return_borrowing(self):
+        book = sample_book(inventory=5)
+        borrowing = sample_borrowing(self.user, book=book)
+
+        res = self.client.post(return_url(borrowing.id))
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        borrowing.refresh_from_db()
+        self.assertEqual(borrowing.actual_return_date, date.today())
+
+    def test_return_borrowing_increments_inventory(self):
+        book = sample_book(inventory=5)
+        borrowing = sample_borrowing(self.user, book=book)
+
+        self.client.post(return_url(borrowing.id))
+
+        book.refresh_from_db()
+        self.assertEqual(book.inventory, 6)
+
+    def test_return_borrowing_twice_rejected(self):
+        borrowing = sample_borrowing(
+            self.user, actual_return_date=date.today()
+        )
+
+        res = self.client.post(return_url(borrowing.id))
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_borrowing_model_str(self):
         book = sample_book(title="Django Basics")
