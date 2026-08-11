@@ -178,6 +178,37 @@ class AuthenticatedBorrowingApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_create_borrowing_denied_if_overdue(self):
+        sample_borrowing(
+            self.user,
+            expected_return_date=date.today() - timedelta(days=1),
+        )
+        book = sample_book(inventory=5)
+        payload = {
+            "book": book.id,
+            "expected_return_date": str(date.today() + timedelta(days=7)),
+        }
+
+        res = self.client.post(BORROWING_LIST_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_borrowing_allowed_if_overdue_returned(self):
+        sample_borrowing(
+            self.user,
+            expected_return_date=date.today() - timedelta(days=1),
+            actual_return_date=date.today(),
+        )
+        book = sample_book(inventory=5)
+        payload = {
+            "book": book.id,
+            "expected_return_date": str(date.today() + timedelta(days=7)),
+        }
+
+        res = self.client.post(BORROWING_LIST_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
     def test_list_shows_only_own_borrowings(self):
         other_user = get_user_model().objects.create_user(
             "other@test.com", "testpass123"
