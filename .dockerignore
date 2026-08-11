@@ -4,5 +4,10 @@
 venv
 __pycache__
 *.pyc
+*.pyo
 .idea
 .vscode
+.github
+Dockerfile
+docker-compose.yaml
+db.sqlite3
