@@ -48,3 +48,31 @@ jobs:
           DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
           DJANGO_DEBUG: "False"
           DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+
+  test:
+    runs-on: ubuntu-latest
+    env:
+      USE_SQLITE: "True"
+      DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pip install poetry==2.3.1
+
+      - name: Install dependencies
+        run: poetry install --no-root --no-interaction
+
+      - name: Run migrations
+        run: poetry run python manage.py migrate --no-input
+
+      - name: Run tests
+        run: poetry run python manage.py test --verbosity=2
